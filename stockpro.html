@@ -1,0 +1,1681 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StockPro</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+/* ══════════════════════════════════════
+   DESIGN TOKENS
+══════════════════════════════════════ */
+:root {
+  --bg:        #07070f;
+  --surface:   #0d0d1a;
+  --card:      #111120;
+  --card2:     #161628;
+  --border:    #1c1c34;
+  --border2:   #252540;
+  --accent:    #7c6ff7;
+  --accent-lo: rgba(124,111,247,.15);
+  --accent-gl: rgba(124,111,247,.08);
+  --green:     #34d399;
+  --green-lo:  rgba(52,211,153,.12);
+  --yellow:    #fbbf24;
+  --yellow-lo: rgba(251,191,36,.12);
+  --red:       #f87171;
+  --red-lo:    rgba(248,113,113,.12);
+  --blue:      #60a5fa;
+  --blue-lo:   rgba(96,165,250,.12);
+  --text:      #e2e2f0;
+  --text2:     #8888aa;
+  --text3:     #50507a;
+}
+
+*{margin:0;padding:0;box-sizing:border-box;}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  min-height: 100vh;
+  display: flex;
+  overflow-x: hidden;
+}
+
+/* ── NOISE GRAIN OVERLAY ── */
+body::before {
+  content:'';
+  position:fixed;inset:0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events:none;z-index:999;opacity:.35;
+}
+
+/* ══════════════════════════════════════
+   SIDEBAR
+══════════════════════════════════════ */
+#sidebar {
+  width: 230px;
+  min-height: 100vh;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0; left: 0;
+  z-index: 100;
+  transition: transform .3s cubic-bezier(.4,0,.2,1);
+}
+
+.sb-logo {
+  padding: 26px 22px 22px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 10px;
+}
+
+.sb-logo-mark {
+  width: 36px; height: 36px;
+  background: var(--accent);
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Syne', sans-serif;
+  font-weight: 800; font-size: 15px; color: #fff;
+  flex-shrink: 0;
+  box-shadow: 0 0 20px rgba(124,111,247,.4);
+}
+
+.sb-logo-text { line-height: 1.2; }
+.sb-logo-name {
+  font-family: 'Syne', sans-serif;
+  font-weight: 800; font-size: 16px; letter-spacing: -.3px;
+}
+.sb-logo-sub {
+  font-size: 10px; color: var(--text3);
+  letter-spacing: 1.8px; text-transform: uppercase;
+}
+
+.sb-nav { flex:1; padding: 16px 10px; overflow-y: auto; }
+
+.sb-section-label {
+  font-size: 9px; letter-spacing: 2.5px; text-transform: uppercase;
+  color: var(--text3); padding: 14px 12px 6px;
+}
+
+.sb-link {
+  display: flex; align-items: center; gap: 11px;
+  padding: 9px 12px; border-radius: 9px;
+  cursor: pointer; transition: all .15s;
+  font-size: 13.5px; color: var(--text2);
+  text-decoration: none; margin-bottom: 2px;
+  position: relative; user-select: none;
+}
+
+.sb-link:hover { background: var(--card2); color: var(--text); }
+
+.sb-link.active {
+  background: var(--accent-lo);
+  color: var(--accent);
+}
+
+.sb-link.active::before {
+  content: '';
+  position: absolute; left: 0; top: 25%; bottom: 25%;
+  width: 3px; background: var(--accent);
+  border-radius: 0 3px 3px 0;
+}
+
+.sb-link .si {
+  font-size: 16px; width: 20px;
+  text-align: center; flex-shrink: 0;
+}
+
+.sb-badge {
+  margin-left: auto;
+  background: var(--red); color: #fff;
+  font-size: 9px; font-weight: 700;
+  padding: 2px 6px; border-radius: 20px;
+  min-width: 18px; text-align: center;
+}
+
+.sb-footer {
+  padding: 14px 18px;
+  border-top: 1px solid var(--border);
+}
+
+.sb-user {
+  display: flex; align-items: center; gap: 10px;
+  cursor: pointer; border-radius: 8px;
+  padding: 6px; transition: background .15s;
+}
+.sb-user:hover { background: var(--card2); }
+
+.sb-avatar {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), #c084fc);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 800; color: #fff; flex-shrink: 0;
+}
+
+.sb-uname  { font-size: 12.5px; font-weight: 500; }
+.sb-urole  { font-size: 10px; color: var(--text3); }
+
+/* ══════════════════════════════════════
+   MAIN / ROUTER OUTLET
+══════════════════════════════════════ */
+#app {
+  margin-left: 230px;
+  flex: 1;
+  min-height: 100vh;
+  position: relative;
+}
+
+/* ── PAGE WRAPPER (each route renders inside) ── */
+.page {
+  padding: 30px 34px;
+  animation: pageIn .22s cubic-bezier(.4,0,.2,1);
+}
+
+@keyframes pageIn {
+  from { opacity:0; transform: translateY(10px); }
+  to   { opacity:1; transform: translateY(0); }
+}
+
+/* ══════════════════════════════════════
+   TOPBAR (inside each page)
+══════════════════════════════════════ */
+.topbar {
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 28px;
+}
+
+.page-heading { flex: 1; }
+
+.page-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 21px; font-weight: 800; letter-spacing: -.4px;
+}
+
+.page-sub { font-size: 12px; color: var(--text3); margin-top: 2px; }
+
+/* ══════════════════════════════════════
+   SHARED COMPONENTS
+══════════════════════════════════════ */
+
+/* Buttons */
+.btn {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 9px 16px; border-radius: 9px; border: none;
+  cursor: pointer; font-family: 'DM Sans', sans-serif;
+  font-size: 13px; font-weight: 500; transition: all .15s;
+  white-space: nowrap;
+}
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary:hover { filter: brightness(1.12); box-shadow: 0 6px 20px rgba(124,111,247,.35); transform: translateY(-1px); }
+.btn-ghost { background: var(--card); color: var(--text); border: 1px solid var(--border); }
+.btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+.btn-danger { background: var(--red-lo); color: var(--red); border: 1px solid rgba(248,113,113,.2); }
+.btn-danger:hover { background: var(--red); color: #fff; }
+.btn-sm { padding: 6px 11px; font-size: 12px; }
+.btn-icon { width: 30px; height: 30px; padding: 0; justify-content: center; font-size: 14px; }
+
+/* Cards */
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+.card-head {
+  display: flex; align-items: center; gap: 10px;
+  padding: 15px 20px; border-bottom: 1px solid var(--border);
+}
+.card-title {
+  font-family: 'Syne', sans-serif;
+  font-weight: 600; font-size: 13.5px; flex: 1;
+}
+.card-body { padding: 20px; }
+
+/* KPIs */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px,1fr));
+  gap: 13px; margin-bottom: 22px;
+}
+.kpi {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 13px; padding: 18px 18px 14px;
+  position: relative; overflow: hidden; transition: transform .2s;
+}
+.kpi:hover { transform: translateY(-2px); }
+.kpi::after {
+  content:''; position:absolute; top:0; left:0; right:0; height:2px;
+}
+.kpi-c1::after { background: var(--accent); }
+.kpi-c2::after { background: var(--green); }
+.kpi-c3::after { background: var(--yellow); }
+.kpi-c4::after { background: var(--red); }
+.kpi-c5::after { background: var(--blue); }
+.kpi-ic { font-size: 20px; margin-bottom: 11px; }
+.kpi-val {
+  font-family: 'Syne', sans-serif;
+  font-size: 25px; font-weight: 800; line-height: 1;
+}
+.kpi-lbl { font-size: 11px; color: var(--text2); margin-top: 4px; }
+.kpi-delta {
+  font-size: 10px; margin-top: 8px;
+  display: inline-flex; align-items: center; gap: 3px;
+  padding: 2px 7px; border-radius: 20px;
+}
+.d-up  { background: var(--green-lo);  color: var(--green); }
+.d-dn  { background: var(--red-lo);    color: var(--red); }
+.d-neu { background: var(--blue-lo);   color: var(--blue); }
+
+/* Table */
+.tbl-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+thead th {
+  padding: 10px 16px; text-align: left;
+  font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase;
+  color: var(--text3); background: rgba(255,255,255,.02);
+  border-bottom: 1px solid var(--border);
+}
+tbody tr { border-bottom: 1px solid var(--border); transition: background .1s; }
+tbody tr:last-child { border-bottom: none; }
+tbody tr:hover { background: rgba(255,255,255,.025); }
+td { padding: 11px 16px; font-size: 13px; }
+
+/* Tags */
+.tag {
+  display: inline-block; padding: 3px 8px;
+  border-radius: 20px; font-size: 10px; font-weight: 600;
+}
+.tag-p  { background: var(--accent-lo); color: var(--accent); }
+.tag-g  { background: var(--green-lo);  color: var(--green); }
+.tag-y  { background: var(--yellow-lo); color: var(--yellow); }
+.tag-r  { background: var(--red-lo);    color: var(--red); }
+.tag-b  { background: var(--blue-lo);   color: var(--blue); }
+.tag-gr { background: rgba(255,255,255,.06); color: var(--text2); }
+
+/* Status dot */
+.dot { width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:5px; }
+.dot-g { background:var(--green); box-shadow:0 0 5px rgba(52,211,153,.5); }
+.dot-y { background:var(--yellow); box-shadow:0 0 5px rgba(251,191,36,.5); }
+.dot-r { background:var(--red); box-shadow:0 0 5px rgba(248,113,113,.5); }
+
+/* Progress bar */
+.prog { height:4px; background:var(--border2); border-radius:2px; overflow:hidden; }
+.prog-fill { height:100%; border-radius:2px; transition:width .5s; }
+
+/* Form */
+.form-grid { display:grid; grid-template-columns:1fr 1fr; gap:13px; }
+.form-full { grid-column:1/-1; }
+.fg { display:flex; flex-direction:column; gap:5px; }
+.flbl { font-size:10px; letter-spacing:1.5px; text-transform:uppercase; color:var(--text3); }
+.fi {
+  background: var(--surface); border: 1px solid var(--border);
+  color: var(--text); border-radius: 8px;
+  padding: 9px 11px; font-size: 13px;
+  font-family: 'DM Sans', sans-serif; transition: border .2s; width:100%;
+}
+.fi:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px rgba(124,111,247,.1); }
+.fi::placeholder { color:var(--text3); }
+textarea.fi { resize:vertical; min-height:74px; }
+
+/* Toolbar */
+.toolbar {
+  display:flex; align-items:center; gap:10px;
+  margin-bottom:14px; flex-wrap:wrap;
+}
+.search-wrap { position:relative; flex:1; min-width:180px; max-width:280px; }
+.search-wrap input {
+  width:100%; background:var(--card); border:1px solid var(--border);
+  color:var(--text); border-radius:8px;
+  padding:9px 13px 9px 34px;
+  font-size:13px; font-family:'DM Sans',sans-serif; transition:border .2s;
+}
+.search-wrap input:focus { outline:none; border-color:var(--accent); }
+.search-wrap input::placeholder { color:var(--text3); }
+.search-wrap .si { position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:13px; }
+.sel { background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:9px 11px;font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer; }
+.sel:focus{outline:none;border-color:var(--accent);}
+
+/* Modal */
+.overlay {
+  display:none; position:fixed; inset:0;
+  background:rgba(0,0,0,.75); z-index:200;
+  backdrop-filter:blur(6px);
+  align-items:center; justify-content:center;
+}
+.overlay.show { display:flex; animation:fadeIn .2s; }
+.modal {
+  background:var(--card2); border:1px solid var(--border2);
+  border-radius:15px; width:490px; max-height:90vh;
+  overflow-y:auto; animation:slideUp .2s;
+}
+.modal-lg { width:600px; }
+.modal-head {
+  padding:20px 22px 16px; border-bottom:1px solid var(--border);
+  display:flex; align-items:center; gap:12px;
+}
+.modal-title { font-family:'Syne',sans-serif; font-weight:700; font-size:16px; flex:1; }
+.modal-body { padding:22px; }
+.modal-foot {
+  padding:14px 22px; border-top:1px solid var(--border);
+  display:flex; justify-content:flex-end; gap:9px;
+}
+
+/* Toast */
+.toast {
+  position:fixed; bottom:22px; right:22px;
+  background:var(--card2); border:1px solid var(--border2);
+  border-radius:11px; padding:12px 16px;
+  display:flex; align-items:center; gap:9px;
+  font-size:13px; z-index:500; min-width:230px;
+  transform:translateY(70px); opacity:0;
+  transition:all .32s cubic-bezier(.34,1.56,.64,1);
+  pointer-events:none;
+}
+.toast.show { transform:translateY(0); opacity:1; }
+
+/* Empty state */
+.empty {
+  display:flex; flex-direction:column; align-items:center;
+  justify-content:center; padding:48px 24px;
+  color:var(--text3);
+}
+.empty .ei { font-size:40px; margin-bottom:10px; opacity:.5; }
+
+/* Timeline */
+.tl-item {
+  display:flex; gap:13px; padding-bottom:18px; position:relative;
+}
+.tl-item:not(:last-child)::before {
+  content:''; position:absolute; left:15px; top:30px; bottom:0;
+  width:1px; background:var(--border);
+}
+.tl-dot {
+  width:30px; height:30px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  font-size:13px; flex-shrink:0; border:2px solid var(--border);
+}
+.tl-info { flex:1; padding-top:4px; }
+.tl-ttl  { font-size:13px; font-weight:500; }
+.tl-dsc  { font-size:12px; color:var(--text2); margin-top:2px; }
+.tl-ts   { font-size:10px; color:var(--text3); margin-top:3px; }
+
+/* Bar chart */
+.bar-chart {
+  display:flex; align-items:flex-end; gap:5px; height:100px;
+}
+.bar-c {
+  flex:1; border-radius:4px 4px 0 0; cursor:pointer;
+  transition:filter .2s; position:relative;
+}
+.bar-c:hover { filter:brightness(1.3); }
+.bar-c::after {
+  content:attr(data-lbl); position:absolute;
+  bottom:-17px; left:50%; transform:translateX(-50%);
+  font-size:9px; color:var(--text3); white-space:nowrap;
+}
+
+/* Toggle */
+.toggle {
+  width:38px; height:21px; background:var(--border2);
+  border-radius:11px; position:relative;
+  cursor:pointer; transition:background .2s; flex-shrink:0;
+}
+.toggle.on { background:var(--accent); }
+.toggle::after {
+  content:''; position:absolute;
+  top:3px; left:3px; width:15px; height:15px;
+  background:#fff; border-radius:50%; transition:transform .2s;
+}
+.toggle.on::after { transform:translateX(17px); }
+
+/* Color swatches */
+.swatch {
+  width:24px; height:24px; border-radius:6px;
+  cursor:pointer; border:2px solid transparent; transition:border .15s;
+}
+.swatch.sel { border-color:#fff; }
+
+/* Donut chart */
+.donut-wrap { position:relative; width:100px; height:100px; flex-shrink:0; }
+.donut-wrap svg { transform:rotate(-90deg); }
+.donut-center {
+  position:absolute; inset:0;
+  display:flex; align-items:center; justify-content:center; flex-direction:column;
+}
+.donut-val { font-family:'Syne',sans-serif; font-size:20px; font-weight:800; }
+.donut-sub { font-size:9px; color:var(--text3); margin-top:1px; }
+
+@keyframes fadeIn  { from{opacity:0}    to{opacity:1} }
+@keyframes slideUp { from{transform:translateY(16px);opacity:0} to{transform:translateY(0);opacity:1} }
+
+::-webkit-scrollbar { width:5px; height:5px; }
+::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:var(--border2); border-radius:3px; }
+
+/* Responsive */
+@media(max-width:900px){
+  #sidebar { transform:translateX(-230px); }
+  #sidebar.open { transform:translateX(0); }
+  #app { margin-left:0; }
+}
+</style>
+</head>
+<body>
+
+<!-- ══════════════════ SIDEBAR ══════════════════ -->
+<aside id="sidebar">
+  <div class="sb-logo">
+    <div class="sb-logo-mark">S</div>
+    <div class="sb-logo-text">
+      <div class="sb-logo-name">StockPro</div>
+      <div class="sb-logo-sub">Inventario</div>
+    </div>
+  </div>
+
+  <nav class="sb-nav" id="sbNav">
+    <div class="sb-section-label">Principal</div>
+    <a class="sb-link" href="/dashboard"   data-route="dashboard">   <span class="si">⬡</span> Dashboard</a>
+    <a class="sb-link" href="/inventario"  data-route="inventario">  <span class="si">📦</span> Inventario</a>
+    <a class="sb-link" href="/pedidos"     data-route="pedidos">     <span class="si">🛒</span> Pedidos <span class="sb-badge" id="sBadge">0</span></a>
+
+    <div class="sb-section-label">Catálogos</div>
+    <a class="sb-link" href="/categorias"  data-route="categorias">  <span class="si">🏷️</span> Categorías</a>
+    <a class="sb-link" href="/proveedores" data-route="proveedores"> <span class="si">🤝</span> Proveedores</a>
+
+    <div class="sb-section-label">Análisis</div>
+    <a class="sb-link" href="/reportes"    data-route="reportes">    <span class="si">📈</span> Reportes</a>
+
+    <div class="sb-section-label">Sistema</div>
+    <a class="sb-link" href="/configuracion" data-route="configuracion"><span class="si">⚙️</span> Configuración</a>
+  </nav>
+
+  <div class="sb-footer">
+    <div class="sb-user">
+      <div class="sb-avatar">AD</div>
+      <div>
+        <div class="sb-uname">Administrador</div>
+        <div class="sb-urole">admin@stockpro.mx</div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- ══════════════════ ROUTER OUTLET ══════════════════ -->
+<div id="app"><!-- Cada ruta inyecta aquí su HTML --></div>
+
+<!-- ══════════════════ MODALS ══════════════════ -->
+
+<!-- Producto -->
+<div class="overlay" id="ov-prod">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-head">
+      <span class="modal-title" id="pmTitle">Nuevo Producto</span>
+      <button class="btn btn-icon btn-ghost" onclick="R.closeModal('ov-prod')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="fg form-full"><label class="flbl">Nombre *</label><input class="fi" id="pm-name" placeholder="Ej. iPhone 15 Pro"></div>
+        <div class="fg"><label class="flbl">SKU *</label><input class="fi" id="pm-sku" placeholder="IPH-15P-256"></div>
+        <div class="fg"><label class="flbl">Categoría</label><select class="fi" id="pm-cat"></select></div>
+        <div class="fg"><label class="flbl">Proveedor</label><select class="fi" id="pm-prov"></select></div>
+        <div class="fg"><label class="flbl">Stock Actual</label><input class="fi" type="number" id="pm-stock" min="0" placeholder="0"></div>
+        <div class="fg"><label class="flbl">Stock Mínimo</label><input class="fi" type="number" id="pm-min" min="0" placeholder="5"></div>
+        <div class="fg"><label class="flbl">Precio ($)</label><input class="fi" type="number" id="pm-price" step="0.01" placeholder="0.00"></div>
+        <div class="fg"><label class="flbl">Emoji</label><input class="fi" id="pm-emoji" maxlength="4" placeholder="📦"></div>
+        <div class="fg form-full"><label class="flbl">Descripción</label><textarea class="fi" id="pm-desc" placeholder="Descripción del producto..."></textarea></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="R.closeModal('ov-prod')">Cancelar</button>
+      <button class="btn btn-primary" onclick="Pages.inventario.save()">💾 Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Pedido -->
+<div class="overlay" id="ov-ped">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-head">
+      <span class="modal-title" id="pedTitle">Nuevo Pedido</span>
+      <button class="btn btn-icon btn-ghost" onclick="R.closeModal('ov-ped')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="fg"><label class="flbl">Producto *</label><select class="fi" id="pedm-prod"></select></div>
+        <div class="fg"><label class="flbl">Proveedor</label><select class="fi" id="pedm-prov"></select></div>
+        <div class="fg"><label class="flbl">Cantidad *</label><input class="fi" type="number" id="pedm-qty" min="1" placeholder="0"></div>
+        <div class="fg"><label class="flbl">Precio unitario ($)</label><input class="fi" type="number" id="pedm-price" placeholder="0.00"></div>
+        <div class="fg"><label class="flbl">Fecha de entrega</label><input class="fi" type="date" id="pedm-fecha"></div>
+        <div class="fg"><label class="flbl">Estado</label>
+          <select class="fi" id="pedm-status">
+            <option>Pendiente</option><option>En tránsito</option><option>Recibido</option><option>Cancelado</option>
+          </select>
+        </div>
+        <div class="fg form-full"><label class="flbl">Notas</label><textarea class="fi" id="pedm-notes" placeholder="Notas..."></textarea></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="R.closeModal('ov-ped')">Cancelar</button>
+      <button class="btn btn-primary" onclick="Pages.pedidos.save()">💾 Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Categoría -->
+<div class="overlay" id="ov-cat">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-head">
+      <span class="modal-title" id="catTitle">Nueva Categoría</span>
+      <button class="btn btn-icon btn-ghost" onclick="R.closeModal('ov-cat')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="fg form-full"><label class="flbl">Nombre *</label><input class="fi" id="catm-name" placeholder="Ej. Electrónica"></div>
+        <div class="fg"><label class="flbl">Emoji</label><input class="fi" id="catm-emoji" maxlength="4" placeholder="📦"></div>
+        <div class="fg"><label class="flbl">Color</label><input class="fi" type="color" id="catm-color" value="#7c6ff7"></div>
+        <div class="fg form-full"><label class="flbl">Descripción</label><textarea class="fi" id="catm-desc" placeholder="Descripción..."></textarea></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="R.closeModal('ov-cat')">Cancelar</button>
+      <button class="btn btn-primary" onclick="Pages.categorias.save()">💾 Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Proveedor -->
+<div class="overlay" id="ov-prov">
+  <div class="modal modal-lg" onclick="event.stopPropagation()">
+    <div class="modal-head">
+      <span class="modal-title" id="provTitle">Nuevo Proveedor</span>
+      <button class="btn btn-icon btn-ghost" onclick="R.closeModal('ov-prov')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="fg form-full"><label class="flbl">Empresa *</label><input class="fi" id="provm-name" placeholder="Nombre de la empresa"></div>
+        <div class="fg"><label class="flbl">Contacto</label><input class="fi" id="provm-contact" placeholder="Nombre"></div>
+        <div class="fg"><label class="flbl">Email</label><input class="fi" id="provm-email" placeholder="email@empresa.com"></div>
+        <div class="fg"><label class="flbl">Teléfono</label><input class="fi" id="provm-tel" placeholder="+52 55 0000 0000"></div>
+        <div class="fg"><label class="flbl">Categoría principal</label><select class="fi" id="provm-cat"></select></div>
+        <div class="fg"><label class="flbl">Calificación (1-5)</label><input class="fi" type="number" id="provm-rating" min="1" max="5" value="5"></div>
+        <div class="fg form-full"><label class="flbl">Dirección</label><input class="fi" id="provm-dir" placeholder="Dirección completa"></div>
+        <div class="fg form-full"><label class="flbl">Notas</label><textarea class="fi" id="provm-notes" placeholder="Notas..."></textarea></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="R.closeModal('ov-prov')">Cancelar</button>
+      <button class="btn btn-primary" onclick="Pages.proveedores.save()">💾 Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast">
+  <span id="toastIcon">✅</span>
+  <span id="toastMsg">Operación exitosa</span>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     JAVASCRIPT — SPA ENGINE + DATA + PAGES
+══════════════════════════════════════════════════════════ -->
+<script>
+'use strict';
+
+/* ════════════════════════════════════════
+   DATABASE (shared state)
+════════════════════════════════════════ */
+const DB = {
+  editId: null,
+  categories: [],
+  suppliers: [],
+  products: [],
+  orders: [],
+};
+
+function initDB(){
+  DB.categories = [
+    {id:1,name:'Tecnología',  emoji:'💻',color:'#7c6ff7',desc:'Computadoras y laptops'},
+    {id:2,name:'Móviles',     emoji:'📱',color:'#60a5fa',desc:'Smartphones y tablets'},
+    {id:3,name:'Electrónica', emoji:'📺',color:'#34d399',desc:'TV, audio y video'},
+    {id:4,name:'Accesorios',  emoji:'🎧',color:'#fbbf24',desc:'Periféricos y accesorios'},
+    {id:5,name:'Gaming',      emoji:'🎮',color:'#f87171',desc:'Consolas y videojuegos'},
+  ];
+  DB.suppliers = [
+    {id:1,name:'Apple Dist.',  contact:'Carlos Ruiz',  email:'c.ruiz@appledist.mx',  tel:'+52 55 1111 2222',cat:'Tecnología', rating:5,dir:'Av. Insurgentes 450, CDMX',notes:'Pedido mínimo $5,000'},
+    {id:2,name:'Samsung MX',   contact:'Laura Pérez',  email:'l.perez@samsungmx.com',tel:'+52 55 3333 4444',cat:'Electrónica',rating:4,dir:'Blvd. Ávila Camacho 36',  notes:'Excelentes tiempos'},
+    {id:3,name:'Dell Latam',   contact:'Miguel Torres',email:'m.torres@dell.com',     tel:'+52 55 5555 6666',cat:'Tecnología', rating:4,dir:'Paseo de las Palmas 100',  notes:''},
+    {id:4,name:'TechSupply',   contact:'Ana García',   email:'a.garcia@techsupply.mx',tel:'+52 55 7777 8888',cat:'Accesorios', rating:3,dir:'Col. Centro, CDMX',        notes:'Precios competitivos'},
+    {id:5,name:'Logitech MX',  contact:'Roberto Silva',email:'r.silva@logitech.com',  tel:'+52 55 9999 0000',cat:'Accesorios', rating:5,dir:'Polanco, CDMX',            notes:''},
+    {id:6,name:'Nintendo Dist.',contact:'Yuki Tanaka', email:'y.tanaka@nintendo.mx',  tel:'+52 55 1234 5678',cat:'Gaming',     rating:5,dir:'Lomas Chapultepec, CDMX',  notes:''},
+  ];
+  DB.products = [
+    {id:1, name:'MacBook Pro M3',      sku:'MBP-M3-14',    catId:1,supId:1,stock:18,min:5, price:2499,emoji:'💻',desc:'MacBook Pro 14" chip M3'},
+    {id:2, name:'iPhone 15 Pro',       sku:'IPH-15P-256',  catId:2,supId:1,stock:4, min:6, price:1199,emoji:'📱',desc:'iPhone 15 Pro 256GB'},
+    {id:3, name:'Samsung 65" QLED',    sku:'SAM-65Q-4K',   catId:3,supId:2,stock:7, min:3, price:1850,emoji:'📺',desc:'Smart TV 4K QLED'},
+    {id:4, name:'AirPods Pro 2',       sku:'APP-2-USB',     catId:4,supId:1,stock:3, min:8, price:249, emoji:'🎧',desc:'Audífonos inalámbricos ANC'},
+    {id:5, name:'Sony WH-1000XM5',     sku:'SON-WH5-BLK',  catId:4,supId:4,stock:11,min:4, price:349, emoji:'🎵',desc:'Noise-cancelling premium'},
+    {id:6, name:'iPad Pro 12.9"',      sku:'IPD-P129-256', catId:2,supId:1,stock:6, min:4, price:1099,emoji:'📟',desc:'iPad Pro chip M2'},
+    {id:7, name:'Dell XPS 15',         sku:'DEL-XPS15-I7', catId:1,supId:3,stock:5, min:3, price:1799,emoji:'🖥️',desc:'Laptop premium Intel i7'},
+    {id:8, name:'Google Pixel 8',      sku:'GOO-PIX8-128', catId:2,supId:4,stock:9, min:5, price:699, emoji:'📲',desc:'Android puro, cámara AI'},
+    {id:9, name:'Cable USB-C 2m',      sku:'CBL-USBC-2M',  catId:4,supId:4,stock:2, min:20,price:15,  emoji:'🔌',desc:'Carga rápida 100W'},
+    {id:10,name:'Monitor LG 27"',      sku:'LG-27UK-4K',   catId:3,supId:4,stock:8, min:3, price:599, emoji:'🖥️',desc:'Monitor 4K IPS'},
+    {id:11,name:'Logitech MX Keys',    sku:'LOG-MXK-BLK',  catId:4,supId:5,stock:14,min:5, price:109, emoji:'⌨️',desc:'Teclado inalámbrico premium'},
+    {id:12,name:'Samsung S24 Ultra',   sku:'SAM-S24U-256', catId:2,supId:2,stock:13,min:5, price:1299,emoji:'📱',desc:'Flagship Samsung'},
+    {id:13,name:'Cargador 140W GaN',   sku:'CHR-140W-USB', catId:4,supId:4,stock:4, min:10,price:89,  emoji:'🔋',desc:'USB-C 140W compacto'},
+    {id:14,name:'Nintendo Switch OLED',sku:'NIN-SW-OLED',  catId:5,supId:6,stock:10,min:4, price:349, emoji:'🎮',desc:'Consola OLED'},
+    {id:15,name:'PS5 Slim',            sku:'SON-PS5-SLM',  catId:5,supId:2,stock:0, min:3, price:499, emoji:'🕹️',desc:'PlayStation 5 Slim'},
+    {id:16,name:'MX Master 3S',        sku:'LOG-MXM-3S',   catId:4,supId:5,stock:20,min:5, price:99,  emoji:'🖱️',desc:'Mouse ergonómico premium'},
+  ];
+  DB.orders = [
+    {id:1,prodId:2, supId:1,qty:20,price:1100,fecha:'2025-03-15',status:'En tránsito',notes:'Urgente — stock bajo'},
+    {id:2,prodId:4, supId:1,qty:15,price:230, fecha:'2025-03-18',status:'Pendiente',  notes:''},
+    {id:3,prodId:9, supId:4,qty:50,price:12,  fecha:'2025-03-20',status:'Pendiente',  notes:'Reposición cable USB'},
+    {id:4,prodId:15,supId:2,qty:5, price:470, fecha:'2025-03-10',status:'Recibido',   notes:'Recibido con demora'},
+    {id:5,prodId:13,supId:4,qty:25,price:80,  fecha:'2025-03-22',status:'Pendiente',  notes:''},
+    {id:6,prodId:7, supId:3,qty:8, price:1700,fecha:'2025-02-28',status:'Recibido',   notes:''},
+    {id:7,prodId:1, supId:1,qty:10,price:2300,fecha:'2025-03-25',status:'Cancelado',  notes:'Sin stock proveedor'},
+  ];
+}
+
+/* ════════════════════════════════════════
+   HELPERS
+════════════════════════════════════════ */
+const H = {
+  getCat:  id => DB.categories.find(c=>c.id===id) || {name:'—',emoji:'📦',color:'#555'},
+  getSup:  id => DB.suppliers.find(s=>s.id===id)  || {name:'—'},
+  getProd: id => DB.products.find(p=>p.id===id)   || {name:'—',emoji:'📦',price:0},
+  nextId: arr => arr.length ? Math.max(...arr.map(x=>x.id))+1 : 1,
+
+  $: id => document.getElementById(id),
+  fmt: n => '$'+Number(n).toLocaleString('es-MX',{minimumFractionDigits:0}),
+
+  stockStatus(p){
+    if(p.stock===0)       return {dot:'dot-r',tag:'tag-r',lbl:'Agotado'};
+    if(p.stock<=p.min)    return {dot:'dot-y',tag:'tag-y',lbl:'Stock bajo'};
+    return                       {dot:'dot-g',tag:'tag-g',lbl:'Disponible'};
+  },
+
+  toast(msg, type='success'){
+    const icons={success:'✅',error:'❌',info:'ℹ️',warn:'⚠️'};
+    H.$('toastMsg').textContent = msg;
+    H.$('toastIcon').textContent = icons[type]||'✅';
+    const t = H.$('toast');
+    t.className = `toast show`;
+    t.style.borderColor = type==='success'?'rgba(52,211,153,.3)':type==='error'?'rgba(248,113,113,.3)':'rgba(124,111,247,.3)';
+    setTimeout(()=>t.classList.remove('show'),3200);
+  },
+
+  kpi(items){
+    return `<div class="kpi-grid">${items.map((k,i)=>`
+      <div class="kpi kpi-c${i+1}">
+        <div class="kpi-ic">${k.ic}</div>
+        <div class="kpi-val">${k.val}</div>
+        <div class="kpi-lbl">${k.lbl}</div>
+        <span class="kpi-delta ${k.dc||'d-neu'}">${k.delta||''}</span>
+      </div>`).join('')}
+    </div>`;
+  },
+
+  catTag(catId){
+    const c=H.getCat(catId);
+    return `<span class="tag" style="background:${c.color}22;color:${c.color};">${c.emoji} ${c.name}</span>`;
+  },
+
+  progColor(p){
+    if(p.stock===0) return 'var(--red)';
+    if(p.stock<=p.min) return 'var(--yellow)';
+    return 'var(--green)';
+  },
+
+  progPct(p){
+    return Math.min(100,Math.round(p.stock/Math.max(p.min*3,1)*100));
+  },
+
+  updateBadge(){
+    const n = DB.orders.filter(o=>o.status==='Pendiente').length;
+    const b = H.$('sBadge');
+    b.textContent = n;
+    b.style.display = n ? '' : 'none';
+  }
+};
+
+/* ════════════════════════════════════════
+   CLIENT-SIDE ROUTER (History API)
+════════════════════════════════════════ */
+const R = {
+  routes: {},
+
+  // Register a route: path → render function
+  register(path, fn){ this.routes[path] = fn; },
+
+  // Navigate to path (updates URL + renders)
+  navigate(path, pushState=true){
+    if(pushState) history.pushState({path}, '', path);
+    this.render(path);
+    // Update active link
+    document.querySelectorAll('.sb-link').forEach(a=>{
+      a.classList.toggle('active', a.getAttribute('href')===path);
+    });
+  },
+
+  render(path){
+    const fn = this.routes[path] || this.routes['/dashboard'];
+    const app = document.getElementById('app');
+    app.innerHTML = fn();
+    // Run any post-render init
+    const key = path.replace('/','');
+    if(Pages[key] && Pages[key].init) Pages[key].init();
+  },
+
+  openModal(id){
+    const ov=H.$(id);
+    ov.style.display='flex';
+    requestAnimationFrame(()=>ov.classList.add('show'));
+    ov.onclick = e=>{ if(e.target===ov) this.closeModal(id); };
+  },
+
+  closeModal(id){
+    const ov=H.$(id);
+    ov.classList.remove('show');
+    setTimeout(()=>ov.style.display='none',200);
+  }
+};
+
+/* ════════════════════════════════════════
+   INTERCEPT ALL <a> CLICKS (SPA links)
+════════════════════════════════════════ */
+document.addEventListener('click', e=>{
+  const link = e.target.closest('a[data-route]');
+  if(!link) return;
+  e.preventDefault();
+  R.navigate(link.getAttribute('href'));
+});
+
+// Browser back/forward
+window.addEventListener('popstate', e=>{
+  R.navigate(e.state?.path || '/dashboard', false);
+});
+
+/* ════════════════════════════════════════
+   PAGES — each is an independent component
+════════════════════════════════════════ */
+const Pages = {};
+
+/* ─── DASHBOARD ─── */
+Pages.dashboard = {
+  render(){
+    const total = DB.products.length;
+    const stockTotal = DB.products.reduce((s,p)=>s+p.stock,0);
+    const val = DB.products.reduce((s,p)=>s+p.price*p.stock,0);
+    const alerts = DB.products.filter(p=>p.stock<=p.min);
+
+    const kpis = H.kpi([
+      {ic:'📦',val:total,       lbl:'Productos',        delta:'▲ activos',       dc:'d-up'},
+      {ic:'🏷️',val:stockTotal,  lbl:'Unidades totales', delta:'▲ en almacén',    dc:'d-up'},
+      {ic:'💰',val:H.fmt(val),  lbl:'Valor inventario', delta:'▶ capital',       dc:'d-neu'},
+      {ic:'🚨',val:alerts.length,lbl:'Alertas',         delta:alerts.length?'▼ atención':'▲ ok', dc:alerts.length?'d-dn':'d-up'},
+    ]);
+
+    const days=['L','M','X','J','V','S','D'], vals=[14,8,21,17,30,12,25];
+    const maxV=Math.max(...vals);
+    const chart = vals.map((v,i)=>`<div class="bar-c" data-lbl="${days[i]}" style="height:${Math.round(v/maxV*100)}%;background:${i===6?'var(--accent)':'rgba(124,111,247,.32)'};" title="${v} movimientos"></div>`).join('');
+
+    const top5 = [...DB.products].sort((a,b)=>(b.price*b.stock)-(a.price*a.stock)).slice(0,5);
+    const maxT = top5[0]?top5[0].price*top5[0].stock:1;
+    const topRows = top5.map(p=>{
+      const c=H.getCat(p.catId);
+      return `<div style="padding:9px 18px;border-bottom:1px solid var(--border);">
+        <div style="display:flex;align-items:center;gap:9px;margin-bottom:4px;">
+          <div style="width:30px;height:30px;border-radius:7px;background:${c.color}22;display:flex;align-items:center;justify-content:center;font-size:14px;">${p.emoji}</div>
+          <span style="flex:1;font-size:12.5px;font-weight:500;">${p.name}</span>
+          <span style="font-size:12px;font-weight:700;">${H.fmt(p.price*p.stock)}</span>
+        </div>
+        <div class="prog" style="margin-left:39px;"><div class="prog-fill" style="width:${Math.round((p.price*p.stock)/maxT*100)}%;background:${c.color};"></div></div>
+      </div>`;
+    }).join('');
+
+    const alertRows = alerts.length===0
+      ? '<div class="empty"><div class="ei">✅</div><p>Sin alertas activas</p></div>'
+      : alerts.map(p=>{
+          const st=H.stockStatus(p);
+          return `<div style="display:flex;align-items:center;gap:10px;padding:10px 18px;border-bottom:1px solid var(--border);">
+            <div style="width:32px;height:32px;border-radius:7px;background:${H.getCat(p.catId).color}22;display:flex;align-items:center;justify-content:center;">${p.emoji}</div>
+            <div style="flex:1;"><div style="font-size:13px;font-weight:500;">${p.name}</div><div style="font-size:11px;color:var(--text3);">Stock: ${p.stock} / Mín: ${p.min}</div></div>
+            <span class="tag ${st.tag}">${st.lbl}</span>
+          </div>`;
+        }).join('');
+
+    const timeline=[
+      {ic:'📦',bg:'var(--accent-lo)',t:'Inventario actualizado',d:'16 productos sincronizados',ts:'Hace 2h'},
+      {ic:'🛒',bg:'var(--green-lo)', t:'Pedido #004 recibido',  d:'PS5 Slim × 5 uds',         ts:'Ayer, 15:30'},
+      {ic:'⚠️',bg:'var(--yellow-lo)',t:'Alerta stock bajo',     d:'AirPods Pro 2 — 3 uds',    ts:'Ayer, 09:15'},
+      {ic:'🤝',bg:'var(--blue-lo)',  t:'Nuevo proveedor',       d:'Nintendo Dist. agregado',   ts:'Hace 3 días'},
+      {ic:'📈',bg:'var(--red-lo)',   t:'Reporte generado',      d:'Resumen semanal exportado', ts:'Hace 5 días'},
+    ];
+    const tlHtml = timeline.map(e=>`
+      <div class="tl-item">
+        <div class="tl-dot" style="background:${e.bg};">${e.ic}</div>
+        <div class="tl-info">
+          <div class="tl-ttl">${e.t}</div>
+          <div class="tl-dsc">${e.d}</div>
+          <div class="tl-ts">🕒 ${e.ts}</div>
+        </div>
+      </div>`).join('');
+
+    return `<div class="page">
+      <div class="topbar">
+        <div class="page-heading">
+          <div class="page-title">Dashboard</div>
+          <div class="page-sub">${new Date().toLocaleDateString('es-MX',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}</div>
+        </div>
+      </div>
+      ${kpis}
+      <div style="display:grid;grid-template-columns:1.4fr 1fr;gap:14px;margin-bottom:14px;">
+        <div class="card">
+          <div class="card-head"><span class="card-title">Movimientos de Stock — Semana</span><span style="font-size:11px;color:var(--text3);">7 días</span></div>
+          <div class="card-body">
+            <div class="bar-chart">${chart}</div>
+            <div style="display:flex;justify-content:space-between;margin-top:22px;font-size:10px;color:var(--text3);">
+              <span>0</span><span style="color:var(--text)">unidades / día</span>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-head"><span class="card-title">🔝 Top Productos por Valor</span></div>
+          ${topRows}
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+        <div class="card">
+          <div class="card-head"><span class="card-title">🚨 Alertas Activas</span><span class="tag tag-r">${alerts.length}</span></div>
+          ${alertRows}
+        </div>
+        <div class="card">
+          <div class="card-head"><span class="card-title">🕒 Actividad Reciente</span></div>
+          <div class="card-body" style="padding-top:10px;"><div class="tl-item-wrap">${tlHtml}</div></div>
+        </div>
+      </div>
+    </div>`;
+  }
+};
+
+/* ─── INVENTARIO ─── */
+Pages.inventario = {
+  editId: null,
+
+  render(){
+    const ok  = DB.products.filter(p=>p.stock>p.min).length;
+    const low = DB.products.filter(p=>p.stock>0&&p.stock<=p.min).length;
+    const out = DB.products.filter(p=>p.stock===0).length;
+    const val = DB.products.reduce((s,p)=>s+p.price*p.stock,0);
+
+    const kpis = H.kpi([
+      {ic:'📦',val:DB.products.length,lbl:'Total productos',   delta:'▲ registrados', dc:'d-up'},
+      {ic:'✅',val:ok,               lbl:'Disponibles',        delta:'▲ en stock',    dc:'d-up'},
+      {ic:'⚠️',val:low,              lbl:'Stock bajo',         delta:low?'▼ revisar':'▲ ok', dc:low?'d-dn':'d-up'},
+      {ic:'💰',val:H.fmt(val),       lbl:'Valor total',        delta:'▶ inventario',  dc:'d-neu'},
+    ]);
+
+    const catOpts = DB.categories.map(c=>`<option value="${c.id}">${c.emoji} ${c.name}</option>`).join('');
+
+    return `<div class="page">
+      <div class="topbar">
+        <div class="page-heading">
+          <div class="page-title">Inventario</div>
+          <div class="page-sub">Gestión completa de productos</div>
+        </div>
+        <button class="btn btn-ghost" onclick="Pages.inventario.exportCSV()">⬇ Exportar CSV</button>
+        <button class="btn btn-primary" onclick="Pages.inventario.openModal()">＋ Nuevo Producto</button>
+      </div>
+      ${kpis}
+      <div class="card">
+        <div class="card-head">
+          <span class="card-title">Productos</span>
+          <div class="toolbar" style="margin:0;flex:1;justify-content:flex-end;">
+            <div class="search-wrap" style="max-width:220px;">
+              <span class="si">🔍</span>
+              <input type="text" placeholder="Buscar nombre o SKU..." id="invSearch" oninput="Pages.inventario.renderTable()">
+            </div>
+            <select class="sel" id="invCatF" onchange="Pages.inventario.renderTable()">
+              <option value="">Todas las categorías</option>${catOpts}
+            </select>
+            <select class="sel" id="invStF" onchange="Pages.inventario.renderTable()">
+              <option value="">Todos los estados</option>
+              <option value="ok">Disponible</option>
+              <option value="low">Stock bajo</option>
+              <option value="out">Agotado</option>
+            </select>
+          </div>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr>
+              <th>Producto</th><th>Categoría</th><th>Proveedor</th>
+              <th>Stock</th><th>Mín</th><th>Precio</th><th>Valor</th><th>Estado</th><th>Acciones</th>
+            </tr></thead>
+            <tbody id="invBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>`;
+  },
+
+  init(){ this.renderTable(); },
+
+  renderTable(){
+    const q   = (H.$('invSearch')?.value||'').toLowerCase();
+    const cat = H.$('invCatF')?.value||'';
+    const st  = H.$('invStF')?.value||'';
+
+    const rows = DB.products.filter(p=>{
+      const mq = !q || p.name.toLowerCase().includes(q)||p.sku.toLowerCase().includes(q);
+      const mc = !cat || p.catId===+cat;
+      let ms = true;
+      if(st==='ok')  ms = p.stock>p.min;
+      if(st==='low') ms = p.stock>0&&p.stock<=p.min;
+      if(st==='out') ms = p.stock===0;
+      return mq&&mc&&ms;
+    });
+
+    const body = H.$('invBody');
+    if(!body) return;
+    body.innerHTML = rows.length===0
+      ? `<tr><td colspan="9" style="text-align:center;padding:32px;color:var(--text3);">Sin resultados</td></tr>`
+      : rows.map(p=>{
+          const c=H.getCat(p.catId),s=H.getSup(p.supId),st=H.stockStatus(p);
+          return `<tr>
+            <td><div style="display:flex;align-items:center;gap:10px;">
+              <div style="width:33px;height:33px;border-radius:8px;background:${c.color}22;display:flex;align-items:center;justify-content:center;">${p.emoji}</div>
+              <div><div style="font-weight:500;">${p.name}</div><div style="font-size:11px;color:var(--text3);">${p.sku}</div></div>
+            </div></td>
+            <td>${H.catTag(p.catId)}</td>
+            <td style="font-size:12px;color:var(--text2);">${s.name}</td>
+            <td>
+              <div style="font-weight:500;">${p.stock} uds</div>
+              <div class="prog" style="width:70px;margin-top:4px;"><div class="prog-fill" style="width:${H.progPct(p)}%;background:${H.progColor(p)};"></div></div>
+            </td>
+            <td style="color:var(--text3);">${p.min}</td>
+            <td style="font-weight:600;">${H.fmt(p.price)}</td>
+            <td style="color:var(--text2);">${H.fmt(p.price*p.stock)}</td>
+            <td><span class="dot ${st.dot}"></span>${st.lbl}</td>
+            <td><div style="display:flex;gap:5px;">
+              <button class="btn btn-icon btn-ghost btn-sm" onclick="Pages.inventario.openModal(${p.id})">✏️</button>
+              <button class="btn btn-icon btn-ghost btn-sm" onclick="Pages.inventario.delete(${p.id})">🗑️</button>
+            </div></td>
+          </tr>`;
+        }).join('');
+  },
+
+  openModal(id=null){
+    this.editId = id;
+    H.$('pm-cat').innerHTML  = DB.categories.map(c=>`<option value="${c.id}">${c.emoji} ${c.name}</option>`).join('');
+    H.$('pm-prov').innerHTML = DB.suppliers.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
+
+    if(id){
+      const p=DB.products.find(x=>x.id===id);
+      H.$('pmTitle').textContent='Editar Producto';
+      H.$('pm-name').value=p.name; H.$('pm-sku').value=p.sku;
+      H.$('pm-cat').value=p.catId; H.$('pm-prov').value=p.supId;
+      H.$('pm-stock').value=p.stock; H.$('pm-min').value=p.min;
+      H.$('pm-price').value=p.price; H.$('pm-emoji').value=p.emoji;
+      H.$('pm-desc').value=p.desc||'';
+    } else {
+      H.$('pmTitle').textContent='Nuevo Producto';
+      ['pm-name','pm-sku','pm-stock','pm-min','pm-price','pm-desc'].forEach(i=>H.$(i).value='');
+      H.$('pm-emoji').value='📦';
+    }
+    R.openModal('ov-prod');
+  },
+
+  save(){
+    const name=H.$('pm-name').value.trim(), sku=H.$('pm-sku').value.trim();
+    if(!name||!sku){ H.toast('Nombre y SKU obligatorios','warn'); return; }
+    const obj={name,sku,catId:+H.$('pm-cat').value,supId:+H.$('pm-prov').value,
+      stock:+H.$('pm-stock').value||0,min:+H.$('pm-min').value||5,
+      price:+H.$('pm-price').value||0,emoji:H.$('pm-emoji').value||'📦',desc:H.$('pm-desc').value};
+
+    if(this.editId){
+      const i=DB.products.findIndex(p=>p.id===this.editId);
+      DB.products[i]={...DB.products[i],...obj};
+      H.toast('Producto actualizado');
+    } else {
+      obj.id=H.nextId(DB.products); DB.products.push(obj);
+      H.toast('Producto agregado');
+    }
+    R.closeModal('ov-prod');
+    this.renderTable();
+  },
+
+  delete(id){
+    if(!confirm('¿Eliminar este producto?')) return;
+    DB.products=DB.products.filter(p=>p.id!==id);
+    this.renderTable();
+    H.toast('Producto eliminado','error');
+  },
+
+  exportCSV(){
+    const rows=[['Nombre','SKU','Categoría','Proveedor','Stock','Mín','Precio','Valor Total']];
+    DB.products.forEach(p=>rows.push([p.name,p.sku,H.getCat(p.catId).name,H.getSup(p.supId).name,p.stock,p.min,p.price,p.price*p.stock]));
+    const csv=rows.map(r=>r.join(',')).join('\n');
+    const a=document.createElement('a');
+    a.href='data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv);
+    a.download='inventario.csv'; a.click();
+    H.toast('CSV exportado','info');
+  }
+};
+
+/* ─── PEDIDOS ─── */
+Pages.pedidos = {
+  editId: null,
+  statusMap:{
+    'Pendiente':  {cls:'tag-y',ic:'⏳'},
+    'En tránsito':{cls:'tag-b',ic:'🚚'},
+    'Recibido':   {cls:'tag-g',ic:'✅'},
+    'Cancelado':  {cls:'tag-r',ic:'❌'},
+  },
+
+  render(){
+    const pend  = DB.orders.filter(o=>o.status==='Pendiente').length;
+    const trans = DB.orders.filter(o=>o.status==='En tránsito').length;
+    const recv  = DB.orders.filter(o=>o.status==='Recibido').length;
+    const inv   = DB.orders.filter(o=>o.status!=='Cancelado').reduce((s,o)=>s+o.qty*o.price,0);
+
+    const kpis = H.kpi([
+      {ic:'⏳',val:pend, lbl:'Pendientes',   delta:pend?'▼ sin confirmar':'▲ al día', dc:pend?'d-dn':'d-up'},
+      {ic:'🚚',val:trans,lbl:'En tránsito',  delta:'▶ en camino',dc:'d-neu'},
+      {ic:'✅',val:recv, lbl:'Recibidos',    delta:'▲ completados',dc:'d-up'},
+      {ic:'💸',val:H.fmt(inv),lbl:'Total invertido',delta:'▶ acumulado',dc:'d-neu'},
+    ]);
+
+    return `<div class="page">
+      <div class="topbar">
+        <div class="page-heading">
+          <div class="page-title">Pedidos</div>
+          <div class="page-sub">Órdenes de reabastecimiento</div>
+        </div>
+        <button class="btn btn-primary" onclick="Pages.pedidos.openModal()">＋ Nuevo Pedido</button>
+      </div>
+      ${kpis}
+      <div class="card">
+        <div class="card-head">
+          <span class="card-title">Órdenes de Compra</span>
+          <select class="sel" id="pedFilter" onchange="Pages.pedidos.renderTable()" style="margin-left:auto;">
+            <option value="">Todos los estados</option>
+            <option>Pendiente</option><option>En tránsito</option>
+            <option>Recibido</option><option>Cancelado</option>
+          </select>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr>
+              <th>#Orden</th><th>Producto</th><th>Proveedor</th>
+              <th>Cantidad</th><th>Total</th><th>Fecha</th><th>Estado</th><th>Acciones</th>
+            </tr></thead>
+            <tbody id="pedBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>`;
+  },
+
+  init(){ this.renderTable(); H.updateBadge(); },
+
+  renderTable(){
+    const filter=H.$('pedFilter')?.value||'';
+    const rows=DB.orders.filter(o=>!filter||o.status===filter);
+    const body=H.$('pedBody');
+    if(!body)return;
+
+    body.innerHTML=rows.map(o=>{
+      const p=H.getProd(o.prodId),s=H.getSup(o.supId);
+      const st=this.statusMap[o.status]||{cls:'tag-gr',ic:'?'};
+      const canReceive=o.status==='En tránsito'||o.status==='Pendiente';
+      return `<tr>
+        <td style="font-weight:700;color:var(--accent);">#${String(o.id).padStart(3,'0')}</td>
+        <td><div style="display:flex;align-items:center;gap:9px;">
+          <span style="font-size:16px;">${p.emoji}</span>
+          <div><div style="font-weight:500;">${p.name}</div>
+          ${o.notes?`<div style="font-size:11px;color:var(--text3);">${o.notes}</div>`:''}
+          </div>
+        </div></td>
+        <td style="font-size:12px;color:var(--text2);">${s.name}</td>
+        <td style="font-weight:600;">${o.qty} uds</td>
+        <td style="font-weight:600;">${H.fmt(o.qty*o.price)}</td>
+        <td style="font-size:12px;color:var(--text3);">${o.fecha}</td>
+        <td><span class="tag ${st.cls}">${st.ic} ${o.status}</span></td>
+        <td><div style="display:flex;gap:5px;">
+          ${canReceive?`<button class="btn btn-sm btn-ghost" onclick="Pages.pedidos.receive(${o.id})">✅ Recibir</button>`:''}
+          <button class="btn btn-icon btn-ghost btn-sm" onclick="Pages.pedidos.openModal(${o.id})">✏️</button>
+          <button class="btn btn-icon btn-ghost btn-sm" onclick="Pages.pedidos.delete(${o.id})">🗑️</button>
+        </div></td>
+      </tr>`;
+    }).join('');
+  },
+
+  receive(id){
+    const o=DB.orders.find(x=>x.id===id);
+    o.status='Recibido';
+    const p=DB.products.find(x=>x.id===o.prodId);
+    if(p) p.stock+=o.qty;
+    this.renderTable(); H.updateBadge();
+    H.toast(`Pedido #${String(id).padStart(3,'0')} recibido — stock actualizado`);
+  },
+
+  delete(id){
+    if(!confirm('¿Eliminar pedido?')) return;
+    DB.orders=DB.orders.filter(o=>o.id!==id);
+    this.renderTable(); H.updateBadge();
+    H.toast('Pedido eliminado','error');
+  },
+
+  openModal(id=null){
+    this.editId=id;
+    H.$('pedm-prod').innerHTML=DB.products.map(p=>`<option value="${p.id}">${p.emoji} ${p.name}</option>`).join('');
+    H.$('pedm-prov').innerHTML=DB.suppliers.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
+    if(id){
+      const o=DB.orders.find(x=>x.id===id);
+      H.$('pedTitle').textContent='Editar Pedido';
+      H.$('pedm-prod').value=o.prodId; H.$('pedm-prov').value=o.supId;
+      H.$('pedm-qty').value=o.qty; H.$('pedm-price').value=o.price;
+      H.$('pedm-fecha').value=o.fecha; H.$('pedm-status').value=o.status;
+      H.$('pedm-notes').value=o.notes||'';
+    } else {
+      H.$('pedTitle').textContent='Nuevo Pedido';
+      ['pedm-qty','pedm-price','pedm-notes'].forEach(i=>H.$(i).value='');
+      H.$('pedm-fecha').value=new Date().toISOString().split('T')[0];
+      H.$('pedm-status').value='Pendiente';
+    }
+    R.openModal('ov-ped');
+  },
+
+  save(){
+    const qty=+H.$('pedm-qty').value||0;
+    if(!qty){ H.toast('La cantidad es obligatoria','warn'); return; }
+    const obj={prodId:+H.$('pedm-prod').value,supId:+H.$('pedm-prov').value,qty,
+      price:+H.$('pedm-price').value||0,fecha:H.$('pedm-fecha').value,
+      status:H.$('pedm-status').value,notes:H.$('pedm-notes').value};
+    if(this.editId){
+      const i=DB.orders.findIndex(o=>o.id===this.editId);
+      DB.orders[i]={...DB.orders[i],...obj};
+      H.toast('Pedido actualizado');
+    } else {
+      obj.id=H.nextId(DB.orders); DB.orders.push(obj);
+      H.toast('Pedido creado');
+    }
+    R.closeModal('ov-ped'); this.renderTable(); H.updateBadge();
+  }
+};
+
+/* ─── CATEGORÍAS ─── */
+Pages.categorias = {
+  editId: null,
+
+  render(){
+    const cards = DB.categories.map(c=>{
+      const prods=DB.products.filter(p=>p.catId===c.id);
+      const st=prods.reduce((s,p)=>s+p.stock,0);
+      const val=prods.reduce((s,p)=>s+p.price*p.stock,0);
+      return `<div class="card" style="border-color:${c.color}33;transition:transform .2s;cursor:default;"
+        onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform=''">
+        <div class="card-body" style="text-align:center;padding:22px 16px;">
+          <div style="font-size:34px;margin-bottom:7px;">${c.emoji}</div>
+          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px;margin-bottom:3px;">${c.name}</div>
+          <div style="font-size:11px;color:var(--text3);margin-bottom:13px;">${c.desc||'Sin descripción'}</div>
+          <div style="display:flex;justify-content:center;gap:16px;">
+            <div><div style="font-size:18px;font-weight:800;color:${c.color};">${prods.length}</div><div style="font-size:10px;color:var(--text3);">productos</div></div>
+            <div><div style="font-size:18px;font-weight:800;">${st}</div><div style="font-size:10px;color:var(--text3);">uds.</div></div>
+            <div><div style="font-size:13px;font-weight:800;">${H.fmt(val)}</div><div style="font-size:10px;color:var(--text3);">valor</div></div>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+
+    const rows = DB.categories.map(c=>{
+      const prods=DB.products.filter(p=>p.catId===c.id);
+      return `<tr>
+        <td style="font-weight:600;">${c.name}</td>
+        <td style="font-size:20px;">${c.emoji}</td>
+        <td><span style="font-weight:700;color:var(--accent);">${prods.length}</span> productos</td>
+        <td>${prods.reduce((s,p)=>s+p.stock,0)} uds</td>
+        <td>${H.fmt(prods.reduce((s,p)=>s+p.price*p.stock,0))}</td>
+        <td><div style="display:flex;align-items:center;gap:7px;"><div style="width:16px;height:16px;border-radius:4px;background:${c.color};"></div><span style="font-size:11px;color:var(--text3);">${c.color}</span></div></td>
+        <td><div style="display:flex;gap:5px;">
+          <button class="btn btn-icon btn-ghost btn-sm" onclick="Pages.categorias.openModal(${c.id})">✏️</button>
+          <button class="btn btn-icon btn-ghost btn-sm" onclick="Pages.categorias.delete(${c.id})">🗑️</button>
+        </div></td>
+      </tr>`;
+    }).join('');
+
+    return `<div class="page">
+      <div class="topbar">
+        <div class="page-heading">
+          <div class="page-title">Categorías</div>
+          <div class="page-sub">Organiza tu catálogo de productos</div>
+        </div>
+        <button class="btn btn-primary" onclick="Pages.categorias.openModal()">＋ Nueva Categoría</button>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:13px;margin-bottom:20px;">
+        ${cards}
+      </div>
+      <div class="card">
+        <div class="card-head"><span class="card-title">Detalle de Categorías</span></div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>Nombre</th><th>Emoji</th><th>Productos</th><th>Stock</th><th>Valor</th><th>Color</th><th>Acciones</th></tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      </div>
+    </div>`;
+  },
+
+  openModal(id=null){
+    this.editId=id;
+    if(id){
+      const c=DB.categories.find(x=>x.id===id);
+      H.$('catTitle').textContent='Editar Categoría';
+      H.$('catm-name').value=c.name; H.$('catm-emoji').value=c.emoji;
+      H.$('catm-color').value=c.color; H.$('catm-desc').value=c.desc||'';
+    } else {
+      H.$('catTitle').textContent='Nueva Categoría';
+      ['catm-name','catm-desc'].forEach(i=>H.$(i).value='');
+      H.$('catm-emoji').value='📦'; H.$('catm-color').value='#7c6ff7';
+    }
+    R.openModal('ov-cat');
+  },
+
+  save(){
+    const name=H.$('catm-name').value.trim();
+    if(!name){ H.toast('El nombre es obligatorio','warn'); return; }
+    const obj={name,emoji:H.$('catm-emoji').value||'📦',color:H.$('catm-color').value,desc:H.$('catm-desc').value};
+    if(this.editId){
+      const i=DB.categories.findIndex(c=>c.id===this.editId);
+      DB.categories[i]={...DB.categories[i],...obj};
+      H.toast('Categoría actualizada');
+    } else {
+      obj.id=H.nextId(DB.categories); DB.categories.push(obj);
+      H.toast('Categoría creada');
+    }
+    R.closeModal('ov-cat');
+    R.navigate('/categorias');
+  },
+
+  delete(id){
+    if(DB.products.some(p=>p.catId===id)){ H.toast('Tiene productos asignados','warn'); return; }
+    if(!confirm('¿Eliminar esta categoría?')) return;
+    DB.categories=DB.categories.filter(c=>c.id!==id);
+    R.navigate('/categorias');
+    H.toast('Categoría eliminada','error');
+  }
+};
+
+/* ─── PROVEEDORES ─── */
+Pages.proveedores = {
+  editId: null,
+
+  render(){
+    const active=DB.suppliers.filter(s=>DB.products.some(p=>p.supId===s.id)).length;
+    const avgR=(DB.suppliers.reduce((s,p)=>s+p.rating,0)/DB.suppliers.length).toFixed(1);
+
+    const kpis=H.kpi([
+      {ic:'🤝',val:DB.suppliers.length,lbl:'Proveedores',  delta:'▲ registrados',  dc:'d-up'},
+      {ic:'✅',val:active,             lbl:'Activos',      delta:'▲ con productos', dc:'d-up'},
+      {ic:'⭐',val:avgR,              lbl:'Calif. promedio',delta:'▶ puntaje',      dc:'d-neu'},
+    ]);
+
+    return `<div class="page">
+      <div class="topbar">
+        <div class="page-heading">
+          <div class="page-title">Proveedores</div>
+          <div class="page-sub">Directorio y gestión de proveedores</div>
+        </div>
+        <button class="btn btn-primary" onclick="Pages.proveedores.openModal()">＋ Nuevo Proveedor</button>
+      </div>
+      ${kpis}
+      <div class="toolbar">
+        <div class="search-wrap"><span class="si">🔍</span>
+          <input type="text" placeholder="Buscar proveedor..." id="provSearch" oninput="Pages.proveedores.renderCards()">
+        </div>
+      </div>
+      <div id="provGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:13px;"></div>
+    </div>`;
+  },
+
+  init(){ this.renderCards(); },
+
+  renderCards(){
+    const q=(H.$('provSearch')?.value||'').toLowerCase();
+    const list=DB.suppliers.filter(s=>!q||s.name.toLowerCase().includes(q)||s.contact.toLowerCase().includes(q));
+    const grid=H.$('provGrid');
+    if(!grid)return;
+
+    grid.innerHTML=list.map(s=>{
+      const prods=DB.products.filter(p=>p.supId===s.id);
+      const cat=DB.categories.find(c=>c.name===s.cat)||{color:'var(--accent)',emoji:'🏭'};
+      const stars='⭐'.repeat(s.rating)+'☆'.repeat(5-s.rating);
+      return `<div class="card" style="transition:transform .2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
+        <div class="card-head">
+          <div style="width:36px;height:36px;border-radius:9px;background:${cat.color}22;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;">${cat.emoji}</div>
+          <div style="flex:1;">
+            <div style="font-weight:600;font-size:13.5px;">${s.name}</div>
+            <div style="font-size:11px;color:var(--text3);">${s.cat}</div>
+          </div>
+          <button class="btn btn-icon btn-ghost btn-sm" onclick="Pages.proveedores.openModal(${s.id})">✏️</button>
+          <button class="btn btn-icon btn-ghost btn-sm" onclick="Pages.proveedores.delete(${s.id})">🗑️</button>
+        </div>
+        <div class="card-body" style="padding:13px 16px;">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;font-size:12px;margin-bottom:11px;">
+            <div><span style="color:var(--text3);">👤 </span>${s.contact}</div>
+            <div><span style="color:var(--text3);">📞 </span>${s.tel}</div>
+            <div style="grid-column:1/-1;"><span style="color:var(--text3);">✉️ </span>${s.email}</div>
+            ${s.dir?`<div style="grid-column:1/-1;color:var(--text3);font-size:11px;">📍 ${s.dir}</div>`:''}
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <span>${stars}</span>
+            <span class="tag tag-b">${prods.length} productos</span>
+          </div>
+          ${s.notes?`<div style="margin-top:9px;font-size:11px;color:var(--text3);background:var(--surface);padding:7px 9px;border-radius:6px;border-left:2px solid var(--accent);">${s.notes}</div>`:''}
+        </div>
+      </div>`;
+    }).join('');
+  },
+
+  openModal(id=null){
+    this.editId=id;
+    H.$('provm-cat').innerHTML=DB.categories.map(c=>`<option value="${c.name}">${c.emoji} ${c.name}</option>`).join('');
+    if(id){
+      const s=DB.suppliers.find(x=>x.id===id);
+      H.$('provTitle').textContent='Editar Proveedor';
+      H.$('provm-name').value=s.name; H.$('provm-contact').value=s.contact;
+      H.$('provm-email').value=s.email; H.$('provm-tel').value=s.tel;
+      H.$('provm-cat').value=s.cat; H.$('provm-rating').value=s.rating;
+      H.$('provm-dir').value=s.dir||''; H.$('provm-notes').value=s.notes||'';
+    } else {
+      H.$('provTitle').textContent='Nuevo Proveedor';
+      ['provm-name','provm-contact','provm-email','provm-tel','provm-dir','provm-notes'].forEach(i=>H.$(i).value='');
+      H.$('provm-rating').value='5';
+    }
+    R.openModal('ov-prov');
+  },
+
+  save(){
+    const name=H.$('provm-name').value.trim();
+    if(!name){ H.toast('El nombre es obligatorio','warn'); return; }
+    const obj={name,contact:H.$('provm-contact').value,email:H.$('provm-email').value,
+      tel:H.$('provm-tel').value,cat:H.$('provm-cat').value,
+      rating:+H.$('provm-rating').value||5,
+      dir:H.$('provm-dir').value,notes:H.$('provm-notes').value};
+    if(this.editId){
+      const i=DB.suppliers.findIndex(s=>s.id===this.editId);
+      DB.suppliers[i]={...DB.suppliers[i],...obj};
+      H.toast('Proveedor actualizado');
+    } else {
+      obj.id=H.nextId(DB.suppliers); DB.suppliers.push(obj);
+      H.toast('Proveedor creado');
+    }
+    R.closeModal('ov-prov'); this.renderCards();
+  },
+
+  delete(id){
+    if(DB.products.some(p=>p.supId===id)){ H.toast('Tiene productos asignados','warn'); return; }
+    if(!confirm('¿Eliminar proveedor?')) return;
+    DB.suppliers=DB.suppliers.filter(s=>s.id!==id);
+    this.renderCards(); H.toast('Proveedor eliminado','error');
+  }
+};
+
+/* ─── REPORTES ─── */
+Pages.reportes = {
+  render(){
+    const total=DB.products.length;
+    const ok =DB.products.filter(p=>p.stock>p.min).length;
+    const low=DB.products.filter(p=>p.stock>0&&p.stock<=p.min).length;
+    const out=DB.products.filter(p=>p.stock===0).length;
+    const totalVal=DB.products.reduce((s,p)=>s+p.price*p.stock,0);
+
+    // Bar chart
+    const catVals=DB.categories.map(c=>{
+      const v=DB.products.filter(p=>p.catId===c.id).reduce((s,p)=>s+p.price*p.stock,0);
+      return{...c,v};
+    }).filter(c=>c.v>0);
+    const maxV=Math.max(...catVals.map(c=>c.v));
+    const bars=catVals.map(c=>`<div class="bar-c" data-lbl="${c.emoji}${c.name}" style="height:${Math.round(c.v/maxV*100)}%;background:${c.color}cc;" title="${c.name}: ${H.fmt(c.v)}"></div>`).join('');
+
+    // Donut
+    const circ=251;
+    const segs=[
+      {n:ok,  color:'var(--green)', lbl:'Disponible'},
+      {n:low, color:'var(--yellow)',lbl:'Stock bajo'},
+      {n:out, color:'var(--red)',   lbl:'Agotado'},
+    ];
+    let offset=0;
+    const circles=segs.map((s,i)=>{
+      const dash=(s.n/Math.max(total,1))*circ;
+      const c=`<circle cx="50" cy="50" r="40" fill="none" stroke="${s.color}" stroke-width="12"
+        stroke-dasharray="${dash} ${circ-dash}" stroke-dashoffset="${-offset}" style="transition:stroke-dashoffset .5s;"/>`;
+      offset+=dash; return c;
+    }).join('');
+
+    const legend=segs.map(s=>`
+      <div style="display:flex;align-items:center;gap:7px;font-size:12.5px;margin-bottom:7px;">
+        <div style="width:9px;height:9px;border-radius:3px;background:${s.color};flex-shrink:0;"></div>
+        <span style="color:var(--text2);flex:1;">${s.lbl}</span>
+        <span style="font-weight:600;">${s.n}</span>
+      </div>`).join('');
+
+    // Top 5
+    const top5=[...DB.products].sort((a,b)=>(b.price*b.stock)-(a.price*a.stock)).slice(0,5);
+    const maxT=top5[0]?top5[0].price*top5[0].stock:1;
+    const top5html=top5.map((p,i)=>{
+      const c=H.getCat(p.catId);
+      return `<div style="padding:10px 16px;border-bottom:1px solid var(--border);">
+        <div style="display:flex;align-items:center;gap:9px;margin-bottom:4px;">
+          <span style="font-size:10px;font-weight:700;color:var(--text3);width:14px;">${i+1}</span>
+          <span>${p.emoji}</span>
+          <span style="flex:1;font-size:12.5px;font-weight:500;">${p.name}</span>
+          <span style="font-size:12px;font-weight:700;">${H.fmt(p.price*p.stock)}</span>
+        </div>
+        <div class="prog" style="margin-left:23px;"><div class="prog-fill" style="width:${Math.round((p.price*p.stock)/maxT*100)}%;background:${c.color};"></div></div>
+      </div>`;
+    }).join('');
+
+    const summary=[
+      ['Total productos',DB.products.length,'tag-b','registrados'],
+      ['Valor inventario',H.fmt(totalVal),'tag-g','activo'],
+      ['Disponibles',ok,'tag-g','en stock'],
+      ['Stock bajo',low,low?'tag-y':'tag-g',low?'revisar':'ok'],
+      ['Agotados',out,out?'tag-r':'tag-g',out?'urgente':'ok'],
+      ['Categorías activas',DB.categories.length,'tag-p','configuradas'],
+      ['Proveedores',DB.suppliers.length,'tag-b','directorio'],
+      ['Pedidos pendientes',DB.orders.filter(o=>o.status==='Pendiente').length,'tag-y','pendientes'],
+    ].map(([ind,val,cls,lbl])=>`
+      <tr>
+        <td style="color:var(--text2);font-size:13px;">${ind}</td>
+        <td style="font-weight:700;">${val}</td>
+        <td><span class="tag ${cls}">${lbl}</span></td>
+      </tr>`).join('');
+
+    return `<div class="page">
+      <div class="topbar">
+        <div class="page-heading">
+          <div class="page-title">Reportes</div>
+          <div class="page-sub">Análisis y estadísticas del inventario</div>
+        </div>
+        <button class="btn btn-ghost" onclick="window.print()">🖨️ Imprimir</button>
+      </div>
+      <div style="display:grid;grid-template-columns:1.4fr 1fr;gap:14px;">
+        <div>
+          <div class="card" style="margin-bottom:14px;">
+            <div class="card-head"><span class="card-title">📊 Valor por Categoría</span></div>
+            <div class="card-body">
+              <div class="bar-chart" style="height:110px;">${bars}</div>
+              <div style="display:flex;justify-content:space-between;margin-top:22px;font-size:10px;color:var(--text3);">
+                <span>$0</span><span style="color:var(--text)">valor total ($)</span>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-head"><span class="card-title">📋 Indicadores Generales</span></div>
+            <div class="tbl-wrap">
+              <table>
+                <thead><tr><th>Indicador</th><th>Valor</th><th>Estado</th></tr></thead>
+                <tbody>${summary}</tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="card" style="margin-bottom:14px;">
+            <div class="card-head"><span class="card-title">🍩 Estado del Stock</span></div>
+            <div class="card-body" style="display:flex;align-items:center;gap:18px;">
+              <div style="position:relative;width:100px;height:100px;flex-shrink:0;">
+                <svg width="100" height="100" viewBox="0 0 100 100" style="transform:rotate(-90deg);">
+                  <circle cx="50" cy="50" r="40" fill="none" stroke="var(--border2)" stroke-width="12"/>
+                  ${circles}
+                </svg>
+                <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                  <div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;">${total}</div>
+                  <div style="font-size:9px;color:var(--text3);">productos</div>
+                </div>
+              </div>
+              <div style="flex:1;">${legend}</div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-head"><span class="card-title">💰 Top 5 por Valor</span></div>
+            ${top5html}
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }
+};
+
+/* ─── CONFIGURACIÓN ─── */
+Pages.configuracion = {
+  render(){
+    return `<div class="page">
+      <div class="topbar">
+        <div class="page-heading">
+          <div class="page-title">Configuración</div>
+          <div class="page-sub">Preferencias y ajustes del sistema</div>
+        </div>
+        <button class="btn btn-primary" onclick="Pages.configuracion.save()">💾 Guardar cambios</button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+
+        <!-- Empresa -->
+        <div class="card">
+          <div class="card-head"><span class="card-title">🏢 Datos de la Empresa</span></div>
+          <div class="card-body">
+            <div style="display:flex;flex-direction:column;gap:12px;">
+              <div class="fg"><label class="flbl">Nombre de la empresa</label><input class="fi" id="cfg-emp" value="Mi Empresa S.A. de C.V."></div>
+              <div class="fg"><label class="flbl">RFC / ID Fiscal</label><input class="fi" id="cfg-rfc" value="MIEM850101ABC"></div>
+              <div class="fg"><label class="flbl">Email corporativo</label><input class="fi" id="cfg-email" value="admin@stockpro.mx"></div>
+              <div class="fg"><label class="flbl">Teléfono</label><input class="fi" id="cfg-tel" value="+52 55 1234 5678"></div>
+              <div class="fg"><label class="flbl">Dirección</label><textarea class="fi" style="min-height:56px;">Av. Reforma 123, CDMX</textarea></div>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:14px;">
+          <!-- Notificaciones -->
+          <div class="card">
+            <div class="card-head"><span class="card-title">🔔 Notificaciones</span></div>
+            <div class="card-body" style="padding-top:6px;">
+              ${[
+                ['tog1','on','Alertas de stock bajo','Notificar al llegar al mínimo'],
+                ['tog2','on','Pedidos pendientes',   'Recordatorio diario'],
+                ['tog3','',  'Reporte semanal',      'Enviar resumen por correo'],
+                ['tog4','',  'Alertas de vencimiento','Productos por caducar'],
+              ].map(([id,on,t,d])=>`
+                <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);">
+                  <div><div style="font-size:13px;font-weight:500;">${t}</div><div style="font-size:11px;color:var(--text3);">${d}</div></div>
+                  <div class="toggle ${on}" id="${id}" onclick="this.classList.toggle('on')"></div>
+                </div>`).join('')}
+            </div>
+          </div>
+
+          <!-- Apariencia -->
+          <div class="card">
+            <div class="card-head"><span class="card-title">🎨 Apariencia</span></div>
+            <div class="card-body">
+              <div class="fg" style="margin-bottom:13px;">
+                <label class="flbl">Color de acento</label>
+                <div style="display:flex;gap:8px;margin-top:6px;">
+                  ${[['#7c6ff7','sel'],['#34d399',''],['#60a5fa',''],['#fbbf24',''],['#f87171',''],['#f97316','']].map(([c,s])=>
+                    `<div class="swatch ${s}" style="background:${c};" onclick="Pages.configuracion.setAccent('${c}',this)"></div>`
+                  ).join('')}
+                </div>
+              </div>
+              <div class="fg" style="margin-bottom:13px;">
+                <label class="flbl">Moneda</label>
+                <select class="fi">
+                  <option>MXN — Peso mexicano ($)</option>
+                  <option>USD — Dólar americano ($)</option>
+                  <option>EUR — Euro (€)</option>
+                </select>
+              </div>
+              <div class="fg">
+                <label class="flbl">Stock mínimo global (defecto)</label>
+                <input class="fi" type="number" value="5" min="1">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Zona peligro -->
+      <div class="card" style="margin-top:14px;border-color:rgba(248,113,113,.25);">
+        <div class="card-head" style="border-color:rgba(248,113,113,.2);"><span class="card-title" style="color:var(--red);">⚠️ Zona de Peligro</span></div>
+        <div class="card-body" style="display:flex;gap:11px;flex-wrap:wrap;">
+          <button class="btn btn-danger" onclick="if(confirm('¿Restaurar datos de muestra?')){initDB();R.navigate('/dashboard');H.toast('Datos restaurados','info');}">🔄 Restaurar datos de muestra</button>
+          <button class="btn btn-danger" onclick="if(confirm('¿Limpiar inventario? No se puede deshacer.')){DB.products=[];R.navigate('/inventario');H.toast('Inventario limpiado','error');}">🗑️ Limpiar inventario</button>
+        </div>
+      </div>
+    </div>`;
+  },
+
+  setAccent(color, el){
+    document.documentElement.style.setProperty('--accent',color);
+    document.documentElement.style.setProperty('--accent-lo',color+'25');
+    document.querySelectorAll('.swatch').forEach(s=>s.classList.remove('sel'));
+    el.classList.add('sel');
+    // Update sidebar active state color
+    document.querySelectorAll('.sb-link.active').forEach(l=>l.style.color=color);
+    H.toast('Color de acento actualizado','info');
+  },
+
+  save(){
+    H.toast('Configuración guardada correctamente','success');
+  }
+};
+
+/* ════════════════════════════════════════
+   REGISTER ROUTES
+════════════════════════════════════════ */
+R.register('/dashboard',     () => Pages.dashboard.render());
+R.register('/inventario',    () => Pages.inventario.render());
+R.register('/pedidos',       () => Pages.pedidos.render());
+R.register('/categorias',    () => Pages.categorias.render());
+R.register('/proveedores',   () => Pages.proveedores.render());
+R.register('/reportes',      () => Pages.reportes.render());
+R.register('/configuracion', () => Pages.configuracion.render());
+
+/* ════════════════════════════════════════
+   BOOT
+════════════════════════════════════════ */
+initDB();
+H.updateBadge();
+
+// Determine initial route from URL or default to dashboard
+const startPath = ['/dashboard','/inventario','/pedidos','/categorias','/proveedores','/reportes','/configuracion']
+  .includes(location.pathname) ? location.pathname : '/dashboard';
+
+R.navigate(startPath, startPath !== location.pathname);
+</script>
+</body>
+</html>
